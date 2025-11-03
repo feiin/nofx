@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/adshao/go-binance/v2/futures"
 	"github.com/gateio/gateapi-go/v7"
 )
 
@@ -320,6 +321,46 @@ func formatSymbolToContract(symbol string) string {
 		return symbol
 	}
 	return strings.ReplaceAll(strings.ToUpper(symbol), "USDT", "_USDT")
+}
+
+// SetMarginMode 设置仓位模式
+func (t *GateTrader) SetMarginMode(symbol string, isCrossMargin bool) error {
+	var marginType futures.MarginType
+	if isCrossMargin {
+		marginType = futures.MarginTypeCrossed
+	} else {
+		marginType = futures.MarginTypeIsolated
+	}
+	settle := "usdt"
+	_, _, err := t.client.FuturesApi.UpdateDualCompPositionCrossMode(t.getClientCtx(), settle, gateapi.InlineObject{
+		Contract: symbol,
+		Mode:     string(marginType),
+	})
+	// 尝试设置仓位模式
+
+	marginModeStr := "全仓"
+	if !isCrossMargin {
+		marginModeStr = "逐仓"
+	}
+
+	if err != nil {
+		// 如果错误信息包含"No need to change"，说明仓位模式已经是目标值
+		if contains(err.Error(), "No need to change margin type") {
+			log.Printf("  ✓ %s 仓位模式已是 %s", symbol, marginModeStr)
+			return nil
+		}
+		// 如果有持仓，无法更改仓位模式，但不影响交易
+		if contains(err.Error(), "Margin type cannot be changed if there exists position") {
+			log.Printf("  ⚠️ %s 有持仓，无法更改仓位模式，继续使用当前模式", symbol)
+			return nil
+		}
+		log.Printf("  ⚠️ 设置仓位模式失败: %v", err)
+		// 不返回错误，让交易继续
+		return nil
+	}
+
+	log.Printf("  ✓ %s 仓位模式已设置为 %s", symbol, marginModeStr)
+	return nil
 }
 
 // OpenLong 开多仓（市价单）
