@@ -58,6 +58,8 @@ func (t *FuturesTrader) GetBalance() (map[string]interface{}, error) {
 		return nil, fmt.Errorf("获取账户信息失败: %w", err)
 	}
 
+	log.Printf("account %+v", account)
+
 	result := make(map[string]interface{})
 	result["totalWalletBalance"], _ = strconv.ParseFloat(account.TotalWalletBalance, 64)
 	result["availableBalance"], _ = strconv.ParseFloat(account.AvailableBalance, 64)

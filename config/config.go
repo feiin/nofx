@@ -31,6 +31,9 @@ type TraderConfig struct {
 	AsterSigner     string `json:"aster_signer,omitempty"`      // Aster API钱包地址
 	AsterPrivateKey string `json:"aster_private_key,omitempty"` // Aster API钱包私钥
 
+	GateAPIKey     string `json:"gate_api_key,omitempty"`
+	GateAPISecret  string `json:"gate_api_secret,omitempty"`
+	GateUseTestNet bool   `json:"gate_use_testnet,omitempty"`
 	// AI配置
 	QwenKey     string `json:"qwen_key,omitempty"`
 	DeepSeekKey string `json:"deepseek_key,omitempty"`
@@ -128,7 +131,7 @@ func (c *Config) Validate() error {
 		if trader.Exchange == "" {
 			trader.Exchange = "binance" // 默认使用币安
 		}
-		if trader.Exchange != "binance" && trader.Exchange != "hyperliquid" && trader.Exchange != "aster" {
+		if trader.Exchange != "binance" && trader.Exchange != "hyperliquid" && trader.Exchange != "aster" && trader.Exchange != "gate" {
 			return fmt.Errorf("trader[%d]: exchange必须是 'binance', 'hyperliquid' 或 'aster'", i)
 		}
 
@@ -144,6 +147,10 @@ func (c *Config) Validate() error {
 		} else if trader.Exchange == "aster" {
 			if trader.AsterUser == "" || trader.AsterSigner == "" || trader.AsterPrivateKey == "" {
 				return fmt.Errorf("trader[%d]: 使用Aster时必须配置aster_user, aster_signer和aster_private_key", i)
+			}
+		} else if trader.Exchange == "gate" {
+			if trader.GateAPIKey == "" || trader.GateAPISecret == "" {
+				return fmt.Errorf("trader[%d]: 使用Gate时必须配置gate_api_key和gate_api_secret", i)
 			}
 		}
 
