@@ -1264,7 +1264,7 @@ function ExchangeConfigModal({
           {selectedExchange && (
             <>
               {/* Binance 和其他 CEX 交易所的字段 */}
-              {(selectedExchange.id === 'binance' || selectedExchange.type === 'cex' || selectedExchange.type === 'gate') && selectedExchange.id !== 'hyperliquid' && selectedExchange.id !== 'aster' && (
+              {(selectedExchange.id === 'binance' || selectedExchange.type === 'cex' || selectedExchange.id === 'gate') && selectedExchange.id !== 'hyperliquid' && selectedExchange.id !== 'aster' && (
                 <>
                   <div>
                     <label className="block text-sm font-semibold mb-2" style={{ color: '#EAECEF' }}>
