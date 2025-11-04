@@ -70,7 +70,6 @@ func (c *APIClient) GetKlines(symbol, interval string, limit int) ([]Kline, erro
 	if err != nil {
 		return nil, err
 	}
-
 	var klineResponses []KlineResponse
 	err = json.Unmarshal(body, &klineResponses)
 	if err != nil {
