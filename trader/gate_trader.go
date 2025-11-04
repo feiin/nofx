@@ -215,12 +215,7 @@ func (t *GateTrader) SetLeverage(symbol string, leverage int) error {
 	_, _, err = t.client.FuturesApi.UpdatePositionLeverage(t.getClientCtx(), settle, symbol, strLeverage, nil)
 
 	if err != nil {
-		// 如果错误信息包含"No need to change"，说明杠杆已经是目标值
 		// SDK 有bug 先忽略
-		if contains(err.Error(), "No need to change") {
-			log.Printf("  ✓ %s 杠杆已是 %dx", symbol, leverage)
-			return nil
-		}
 		if contains(err.Error(), "json: cannot unmarshal array into") {
 			log.Print("  ✓ 忽略杠杆设置错误（Gate SDK有bug）")
 			return nil
