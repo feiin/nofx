@@ -471,11 +471,12 @@ func (t *GateTrader) CloseLong(symbol string, quantity float64) (map[string]inte
 
 	// 4️⃣ 构建市价平多单（负数代表平多）
 	order := gateapi.FuturesOrder{
-		Contract: symbol,
-		Size:     -sizeInt,       // ❗负数代表平多仓（卖出）
-		Price:    "0",            // 市价单
-		Tif:      "ioc",          // 立即成交或取消
-		Text:     "t-close_long", // Gate要求text以`t-`开头
+		Contract:   symbol,
+		Size:       -sizeInt,       // ❗负数代表平多仓（卖出）
+		Price:      "0",            // 市价单
+		Tif:        "ioc",          // 立即成交或取消
+		Text:       "t-close_long", // Gate要求text以`t-`开头
+		ReduceOnly: true,
 	}
 
 	resp, _, err := t.client.FuturesApi.CreateFuturesOrder(t.getClientCtx(), settle, order, nil)
@@ -609,11 +610,12 @@ func (t *GateTrader) CloseShort(symbol string, quantity float64) (map[string]int
 
 	// 4️⃣ 构建市价平空单（正数代表平空）
 	order := gateapi.FuturesOrder{
-		Contract: symbol,
-		Size:     sizeInt,         // ❗正数代表平空仓（买入）
-		Price:    "0",             // 市价单
-		Tif:      "ioc",           // 立即成交或取消
-		Text:     "t-close_short", // Gate要求text以`t-`开头
+		Contract:   symbol,
+		Size:       sizeInt,         // ❗正数代表平空仓（买入）
+		Price:      "0",             // 市价单
+		Tif:        "ioc",           // 立即成交或取消
+		Text:       "t-close_short", // Gate要求text以`t-`开头
+		ReduceOnly: true,
 	}
 
 	resp, _, err := t.client.FuturesApi.CreateFuturesOrder(t.getClientCtx(), settle, order, nil)
