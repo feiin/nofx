@@ -119,7 +119,7 @@ func (t *GateTrader) GetBalance() (map[string]interface{}, error) {
 
 	totalWalletBalance, _ := strconv.ParseFloat(account.Total, 64)
 	totalUnrealizedProfit, _ := strconv.ParseFloat(account.UnrealisedPnl, 64)
-	availableBalance := totalWalletBalance - totalUnrealizedProfit
+	availableBalance, _ := strconv.ParseFloat(account.Available, 64)
 	result := make(map[string]interface{})
 	result["totalWalletBalance"] = totalWalletBalance
 	result["totalUnrealizedProfit"] = totalUnrealizedProfit
