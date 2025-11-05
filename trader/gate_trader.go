@@ -637,13 +637,37 @@ func (t *GateTrader) SetStopLoss(symbol string, positionSide string, quantity, s
 
 	// 根据方向确定触发规则与下单方向
 	var rule int32
-	// var orderSize int64
+	var orderSize int64
 	if side == "long" {
 		// 当前价 ≤ stopPrice
 		rule = 2
+		orderSize, _ = t.quantityToContractSize(symbol, quantity)
+		orderSize = -orderSize // 多仓止损，卖出平仓, 平多 -> 卖出
 	} else {
 		// 当前价 ≥ stopPrice
 		rule = 1
+		orderSize, _ = t.quantityToContractSize(symbol, quantity)
+		// 平空 -> 买入
+	}
+
+	isFullClose := true
+	if orderSize != 0 {
+		positions, _, err := t.client.FuturesApi.ListPositions(t.getClientCtx(), settle, nil)
+		if err != nil {
+			return fmt.Errorf("获取持仓失败: %w", err)
+		}
+
+		for _, pos := range positions {
+			log.Printf("pos.Contract=%s pos.Size=%d,orderSize=%d", pos.Contract, pos.Size, orderSize)
+			if strings.EqualFold(pos.Contract, symbol) && math.Abs(float64(orderSize)) < math.Abs(float64(pos.Size)) {
+				isFullClose = false
+				break
+			}
+		}
+
+	}
+	if isFullClose {
+		orderSize = 0
 	}
 
 	// 构建触发条件
@@ -658,12 +682,13 @@ func (t *GateTrader) SetStopLoss(symbol string, positionSide string, quantity, s
 
 	// 构建触发后的下单参数
 	initial := gateapi.FuturesInitialOrder{
-		Contract: symbol,
-		Size:     0,
-		Price:    "0",   // 市价单
-		Tif:      "ioc", // 立即成交
-		Close:    true,  // 平仓
-		Text:     fmt.Sprintf("t-stoploss-%s-%d", side, time.Now().Unix()),
+		Contract:   symbol,
+		Size:       orderSize,
+		Price:      "0",         // 市价单
+		Tif:        "ioc",       // 立即成交
+		Close:      isFullClose, // 全部平仓
+		Text:       fmt.Sprintf("t-stoploss-%s-%d", side, time.Now().Unix()),
+		ReduceOnly: true,
 	}
 
 	// 组装请求
@@ -702,12 +727,40 @@ func (t *GateTrader) SetTakeProfit(symbol string, positionSide string, quantity,
 
 	// 3️⃣ 确定触发规则与方向
 	var rule int32
+	var orderSize int64
+
+	// rule 含义：1 => price >= trigger_price, 2 => price <= trigger_price
 	if side == "long" {
-		// price ≥ takeProfitPrice
+		// 多仓止盈，当 price ≥ takeProfitPrice 时卖出平仓
 		rule = 1
+		orderSize, _ = t.quantityToContractSize(symbol, quantity)
+		orderSize = -orderSize // 平多
+
 	} else {
-		// price ≤ takeProfitPrice
+		// 空仓止盈，当 price ≤ takeProfitPrice 时买入平仓
 		rule = 2
+		orderSize, _ = t.quantityToContractSize(symbol, quantity)
+		// 平空 -> 正数即可
+	}
+
+	isFullClose := true
+	if orderSize != 0 {
+		positions, _, err := t.client.FuturesApi.ListPositions(t.getClientCtx(), settle, nil)
+		if err != nil {
+			return fmt.Errorf("获取持仓失败: %w", err)
+		}
+
+		for _, pos := range positions {
+			if strings.EqualFold(pos.Contract, symbol) && math.Abs(float64(orderSize)) < math.Abs(float64(pos.Size)) {
+				isFullClose = false
+				break
+			}
+		}
+
+	}
+
+	if isFullClose {
+		orderSize = 0
 	}
 
 	// 4️⃣ 构建触发条件
@@ -721,12 +774,13 @@ func (t *GateTrader) SetTakeProfit(symbol string, positionSide string, quantity,
 
 	// 5️⃣ 构建触发后的订单参数
 	initial := gateapi.FuturesInitialOrder{
-		Contract: symbol,
-		Size:     0,
-		Price:    "0",   // 市价单
-		Tif:      "ioc", // 立即成交
-		Close:    true,  // 平仓
-		Text:     fmt.Sprintf("t-takeprofit-%s-%d", side, time.Now().Unix()),
+		Contract:   symbol,
+		Size:       orderSize,
+		Price:      "0",         // 市价单
+		Tif:        "ioc",       // 立即成交
+		Close:      isFullClose, // 平仓
+		Text:       fmt.Sprintf("t-takeprofit-%s-%d", side, time.Now().Unix()),
+		ReduceOnly: true,
 	}
 
 	// 6️⃣ 创建止盈触发单

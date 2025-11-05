@@ -103,3 +103,13 @@ func TestSetTakeProfit(t *testing.T) {
 		t.Fatalf("TestSetStopLoss failed: %v", err)
 	}
 }
+
+func TestSetStopLoss(t *testing.T) {
+	conf := getConfig()
+	trader, _ := NewGateTrader(conf.GateAPIKey, conf.GateAPISecret, true)
+	err := trader.SetStopLoss("SOL_USDT", "LONG", 1, 150)
+	if err != nil {
+		t.Fatalf("TestSetStopLoss failed: %v", err)
+	}
+
+}
