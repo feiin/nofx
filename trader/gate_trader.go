@@ -156,9 +156,15 @@ func (t *GateTrader) GetPositions() ([]map[string]interface{}, error) {
 			continue // 跳过无持仓的
 		}
 
+		// 将size转化为amount
+		positionAmt, err := t.contractSizeToQuantity(pos.Contract, posAmt)
+		if err != nil {
+			return nil, fmt.Errorf("换算持仓数量失败: %w", err)
+		}
+
 		posMap := make(map[string]interface{})
 		posMap["symbol"] = pos.Contract
-		posMap["positionAmt"] = float64(posAmt)
+		posMap["positionAmt"] = positionAmt
 		posMap["entryPrice"], _ = strconv.ParseFloat(pos.EntryPrice, 64)
 		posMap["markPrice"], _ = strconv.ParseFloat(pos.MarkPrice, 64)
 		posMap["unRealizedProfit"], _ = strconv.ParseFloat(pos.UnrealisedPnl, 64)
@@ -313,6 +319,15 @@ func (t *GateTrader) quantityToContractSize(symbol string, quantity float64) (in
 	}
 
 	return sizeInt, nil
+}
+
+func (t *GateTrader) contractSizeToQuantity(symbol string, sizeInt int64) (float64, error) {
+	_, _, quanto, err := t.GetSymbolPrecision(symbol)
+	if err != nil {
+		return 0, err
+	}
+	quantity := float64(sizeInt) * quanto
+	return quantity, nil
 }
 
 func formatSymbolToContract(symbol string) string {
