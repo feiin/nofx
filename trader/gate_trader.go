@@ -425,6 +425,9 @@ func (t *GateTrader) CloseLong(symbol string, quantity float64) (map[string]inte
 	settle := "usdt"
 	symbol = formatSymbolToContract(symbol)
 
+	sizeInt := int64(0)
+	var err error
+
 	// 1️⃣ 如果用户没传数量，则自动获取当前持仓数量
 	if quantity == 0 {
 		positions, _, err := t.client.FuturesApi.ListPositions(t.getClientCtx(), settle, nil)
@@ -437,7 +440,7 @@ func (t *GateTrader) CloseLong(symbol string, quantity float64) (map[string]inte
 			// 多仓：Size > 0
 			if strings.EqualFold(pos.Contract, symbol) && pos.Size > 0 {
 				// Gate返回的是张数
-				quantity = float64(pos.Size)
+				sizeInt = int64(pos.Size)
 				found = true
 				break
 			}
@@ -447,24 +450,15 @@ func (t *GateTrader) CloseLong(symbol string, quantity float64) (map[string]inte
 			return nil, fmt.Errorf("没有找到 %s 的多仓可平", symbol)
 		}
 		log.Printf("📊 自动检测到 %s 多仓数量: %.0f 张", symbol, quantity)
+	} else {
+
+		sizeInt, err = t.quantityToContractSize(symbol, quantity)
+		if err != nil {
+			return nil, fmt.Errorf("换算下单张数失败: %+v", err)
+		}
+
 	}
 
-	// 2️⃣ 获取合约精度信息（新版 GetSymbolPrecision）
-	pricePrecision, sizeMin, quanto, err := t.GetSymbolPrecision(symbol)
-	if err != nil {
-		log.Printf("⚠️ 获取精度信息失败，使用默认参数")
-		sizeMin = 1
-		pricePrecision = 3
-		quanto = 1
-	}
-
-	// 3️⃣ 将传入的币数量转换成张数（Gate Futures 下单单位是“张”）
-	sizeFloat := quantity / quanto
-	sizeInt := int64(math.Round(sizeFloat))
-
-	if float64(sizeInt) < sizeMin {
-		return nil, fmt.Errorf("平仓数量 %.6f 转换后不足最小下单量 %.0f张 (每张=%f币)", quantity, sizeMin, quanto)
-	}
 	if sizeInt <= 0 {
 		return nil, fmt.Errorf("无效的平仓数量: %.6f (计算后张数=%d)", quantity, sizeInt)
 	}
@@ -564,6 +558,8 @@ func (t *GateTrader) CloseShort(symbol string, quantity float64) (map[string]int
 
 	symbol = formatSymbolToContract(symbol)
 
+	sizeInt := int64(0)
+	var err error
 	// 1️⃣ 如果用户没传数量，则自动获取当前持仓数量
 	if quantity == 0 {
 		positions, _, err := t.client.FuturesApi.ListPositions(t.getClientCtx(), settle, nil)
@@ -576,7 +572,7 @@ func (t *GateTrader) CloseShort(symbol string, quantity float64) (map[string]int
 			// 空仓：Size < 0
 			if strings.EqualFold(pos.Contract, symbol) && pos.Size < 0 {
 				// Gate返回的是张数
-				quantity = float64(-pos.Size) // 取正数
+				sizeInt = int64(-pos.Size) // 取正数
 				found = true
 				break
 			}
@@ -586,24 +582,13 @@ func (t *GateTrader) CloseShort(symbol string, quantity float64) (map[string]int
 			return nil, fmt.Errorf("没有找到 %s 的空仓可平", symbol)
 		}
 		log.Printf("📊 自动检测到 %s 空仓数量: %.0f 张", symbol, quantity)
+	} else {
+		sizeInt, err = t.quantityToContractSize(symbol, quantity)
+		if err != nil {
+			return nil, fmt.Errorf("换算下单张数失败: %+v", err)
+		}
 	}
 
-	// 2️⃣ 获取合约精度信息（新版 GetSymbolPrecision）
-	pricePrecision, sizeMin, quanto, err := t.GetSymbolPrecision(symbol)
-	if err != nil {
-		log.Printf("⚠️ 获取精度信息失败，使用默认参数")
-		sizeMin = 1
-		pricePrecision = 3
-		quanto = 1
-	}
-
-	// 3️⃣ 将传入的币数量转换成张数（Gate Futures 下单单位是“张”）
-	sizeFloat := quantity / quanto
-	sizeInt := int64(math.Round(sizeFloat))
-
-	if float64(sizeInt) < sizeMin {
-		return nil, fmt.Errorf("平仓数量 %.6f 转换后不足最小下单量 %.0f张 (每张=%f币)", quantity, sizeMin, quanto)
-	}
 	if sizeInt <= 0 {
 		return nil, fmt.Errorf("无效的平仓数量: %.6f (计算后张数=%d)", quantity, sizeInt)
 	}
