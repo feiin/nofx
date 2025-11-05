@@ -480,8 +480,7 @@ func (t *GateTrader) CloseLong(symbol string, quantity float64) (map[string]inte
 
 	// 5️⃣ 输出执行结果
 	log.Printf("✅ 平多仓成功: %s 数量(%.6f币)=%.0f张", symbol, quantity, float64(sizeInt))
-	log.Printf("📄 订单ID: %d | 状态: %s | 价格精度: %d | 乘数: %f",
-		resp.Id, resp.Status, pricePrecision, quanto)
+	log.Printf("📄 订单ID: %d | 状态: %s", resp.Id, resp.Status)
 
 	// 6️⃣ 平仓后取消该币种的挂单（止盈止损单）
 	if err := t.CancelAllOrders(symbol); err != nil {
@@ -610,7 +609,7 @@ func (t *GateTrader) CloseShort(symbol string, quantity float64) (map[string]int
 
 	// 5️⃣ 输出执行结果
 	log.Printf("✅ 平空仓成功: %s 数量(%.6f币)=%.0f张", symbol, quantity, float64(sizeInt))
-	log.Printf("📄 订单ID: %d | 状态: %s | 价格精度: %d | 乘数: %f", resp.Id, resp.Status, pricePrecision, quanto)
+	log.Printf("📄 订单ID: %d | 状态: %s", resp.Id, resp.Status)
 
 	result := make(map[string]interface{})
 	result["orderId"] = resp.Id
